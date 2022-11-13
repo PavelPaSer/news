@@ -1,6 +1,7 @@
 from telebot import TeleBot
 import telebot
 from telebot import types
+import logger as log
 
 bot = TeleBot('5657665886:AAHjVPkc3y90Y-Bm2WO7K8TQSZdQ7-FhAY8')
 value = ''
@@ -36,10 +37,11 @@ keyboard.row(   telebot.types.InlineKeyboardButton('j', callback_data='j'),
 @bot.message_handler(commands=['Запустить'])
 
 def getMessage(message):
+    log.loger(f'Пользователь {message.from_user.first_name} начал пользоваться калькулятором')
     bot.send_message(message.chat.id,
                      text=('Инструкция для работы с рациональными и комплексными числами: \n'
-                           ' - Рациональные. Пример: Вводите числа "2 + 2" после нажимаете "rational"\n'
-                           ' - Комплексные. Пример: Вводите числа "10+8j/2-2j" после нажимаете "c0plex"\n'))
+                           ' - Рациональные. Пример: "2+2" после нажимаете "rational"\n'
+                           ' - Комплексные. Пример: "10+8j/2-2j" после нажимаете "c0plex"\n'))
     global value
     if value == '':
         bot.send_message(message.from_user.id, '0', reply_markup=keyboard)
@@ -50,41 +52,48 @@ def getMessage(message):
 @bot.callback_query_handler(func=lambda call: True)
 def callback_func(query):
     global value, old_value
-    data = query.data
+    data = query.data 
 
-    if data =='no':
-        pass
-    elif data =='c':
+    if data =='c':
+        log.loger(f'Пользователь {query.from_user.first_name} удалил все введеные числа')
         value = ''
     elif data == '<=':
+        log.loger(f'Пользователь {query.from_user.first_name} удалил последнию цыфру введенного числа')
         if value != '':
             value = value[:len(value)-1]
     elif data == 'rational':
+        log.loger(f'Пользователь {query.from_user.first_name} выбрал рациональные числа')
         try:
             value = float( eval(value) )
         except:
+            log.loger(f'Ошибка! Пользователь {query.from_user.first_name} произвел деление на ноль, при использование "rational"')
             value = 'Ошибка!'
 
     elif data == 'complex':
+        log.loger(f'Пользователь {query.from_user.first_name} выбрал комплексные числа')
         try:
             value = complex( eval(value) )
         except:
+            log.loger(f'Ошибка! Пользователь {query.from_user.first_name} произвел деление на ноль при использование "complex"')
             value = 'Ошибка!'
     else:
         value += data
+ 
+
     
     if (value != old_value and value != '') or (value != old_value and value == '') :
         if value == '':
             bot.edit_message_text(chat_id=query.message.chat.id, message_id=query.message.message_id, text='0', reply_markup=keyboard)
+            old_value = '0'
         else:
             bot.edit_message_text(chat_id=query.message.chat.id, message_id=query.message.message_id, text=value, reply_markup=keyboard)
             old_value = value 
 
     if value == 'ошибка': value = ''
     
-
 @bot.message_handler(commands=['start'])
 def main_menu(message):
+    log.loger(f'Пользователь {message.from_user.first_name} добавил бота')
     markup = types.ReplyKeyboardMarkup()
     read_files = types.KeyboardButton('/Запустить')
     reads_start = types.KeyboardButton('/start')
